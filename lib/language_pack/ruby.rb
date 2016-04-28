@@ -101,6 +101,7 @@ WARNING
         post_bundler
         create_database_yml
         install_binaries
+        run_swagger_docs_rake_task
         run_assets_precompile_rake_task
       end
       best_practice_warnings
@@ -758,6 +759,22 @@ params = CGI.parse(uri.query || "")
 
   def database_url
     env("DATABASE_URL") if env("DATABASE_URL")
+  end
+
+  def run_swagger_docs_rake_task
+    instrument 'ruby.run_swagger_docs_rake_task' do
+
+      docs = rake.task("swagger:docs")
+      return true unless docs.is_defined?
+
+      topic "Generating Swagger documentation"
+      docs.invoke(env: rake_env)
+      if docs.success?
+        puts "Swagger documentation generation completed (#{"%.2f" % docs.time}s)"
+      else
+        swagger_docs_fail(docs.output)
+      end
+    end
   end
 
   # executes the block with GIT_DIR environment variable removed since it can mess with the current working directory git thinks it's in
